@@ -4,16 +4,16 @@ This skeleton structure allows you to use the Android flavors mechanism (describ
 
 For example, you might have a Free app with advertising and a Paid app without. Using this framework you can go through the full development cycle with either version and keep the fileset as [DRY](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself) as possible.
 
-As of this writing, the framwork will work with libGDX from 1.0 to 1.3 (as of writing).
+As of this writing, the framwork will work with libGDX from 1.0 to 1.3.
 
-Feedback and improvements are solicited. Please email support+github@eggheadgames.com or add an issue or pull request. Thanks!
+Feedback and improvements are solicited. Please email support+github@eggheadgames.com or add an issue or pull request. Released under an Apache 2.0 License. Enjoy.
 
 # Multiple Application Support #
 
 This repo framework currently builds 2 different applications for 3 platforms.
 
- * My App Free  (the original "Puzzle Baron" puzzle with 5 cell grids)
- * My App Paid (newer smaller puzzles from Puzzle Baron)
+ * YourApp Free 
+ * YourApp Paid 
  
 Each of these is built for Google Play, Amazon and iOS, for a total of 6 variations.
 
