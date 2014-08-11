@@ -17,6 +17,29 @@ This repo framework currently builds 2 different applications for 3 platforms.
  
 Each of these is built for Google Play, Amazon and iOS, for a total of 6 variations.
 
+## How to Configure It ##
+
+The checked in files are a stub of a full gdx application with readme.txt files at the end of each branch. Most of them are there to browse, not to actually install.  This is the suggested installation strategy:
+
+* make sure your existing libGDX checkout is fully commited to git or you have some other backup copy
+* check out this repo somewhere else
+* copy the pack folder into your existing libGDX app
+* do a `grep -r example pack` to find all the places where `com.example.yourapp` appears and change them to match your app's package syntax (most will be in the `pack/build.gradle` file)
+* copy the contents from your existing `android/assets` folder into `pack/src/main/assets`
+* copy the contents from your existing `android/res` folder into `pack/src/main/res`
+* copy the contents from your existing `ios/resources` into `pack/src/ios/main/resources`
+* look at your existing `android/AndroidManifest.xml` file and your existing `android/build.gradle` file and make matching changes to your `pack/build.gradle` and `pack/AndroidManifest.xml` files.
+
+*possibly some other things that are missing - please update this as needed!*
+
+**Check again to be sure you've backed up your files. Running gradle will absolutely definitely DELETE FILES!**
+
+You may wish to to a `git add *` to capture the current set of file changes.
+
+Run `./gradlew :pack:prepFreeGoogle`.
+
+After doing that, look at the git diffs. If everything went well, the `android/` folder will be much the same, though the `AndroidManifest.xml` file may have some comment lines in it, and, depending on how much configuration you did, it may now have some things wrong in it.
+
 ## How to Use It ##
 
 In normal development, you'll work as normal (including Desktop and Android debugging). If you wish to test a specific variation, then you'll run a Gradle `:pack` task, refresh Eclipse (or wait for it to do so itself), then continue developing as normal. You should also be able to do a *clean* in Eclipse and everything should work.
