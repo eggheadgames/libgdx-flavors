@@ -1,0 +1,196 @@
+
+def appVariants = ['Free', 'Paid']
+def storeVariants = ['Google', 'Amazon']
+def iOSAppNames = [Free: "Free", Paid: "Paid" ]
+def iOSversionName = "1.8.03"   // see also below under google & amazon
+
+android {
+    buildToolsVersion "19.0.3"
+    compileSdkVersion 17
+
+    defaultConfig {
+        versionCode 52      // increment this for new releases
+        minSdkVersion 10
+        targetSdkVersion 17
+		buildConfigField "boolean", "ATTEMPT_DATA_IMPORT", "false"
+		buildConfigField "int", "APP_COLOR_SKIN", "0"
+    }
+
+    signingConfigs {
+        release {
+        }
+    }
+
+    flavorDimensions "version", "appstore"
+    
+    productFlavors {
+    	amazon {
+    		flavorDimension "appstore"
+    		versionName "1.8.903"	// amazon ends in 9xx
+		}
+		google {
+			flavorDimension "appstore"
+			versionName "1.8.203"	// google ends in 2xx
+		}
+
+    	free {
+    		flavorDimension "version"
+    		packageName "com.example.yourappfree"
+			buildConfigField "int", "APP_COLOR_SKIN", "2"
+	        buildConfigField "String", "FLURRY_ID", "\"BBBBBBBBBBBBBBBBBBBBB\""
+ 		}
+    	paid {
+    		flavorDimension "version"
+    		packageName "com.example.yourapppaid"
+			buildConfigField "int", "APP_COLOR_SKIN", "0"    		
+	        buildConfigField "String", "FLURRY_ID", "\"AAAAAAAAAAAAAAAAAAAAAA\""		
+    	}
+    }
+
+    buildTypes {
+        release {
+            runProguard false
+            proguardFile getDefaultProguardFile('proguard-android.txt')
+            signingConfig signingConfigs.release
+        }
+    }
+}
+
+// nothing to see here. All configurable stuff is above this line
+/////////////////////////////////////////////////////////////////////////
+
+task cleanIosRes          (type: Delete) { delete '../ios/resources/'  }
+task cleanAndroidRes      (type: Delete) { delete '../android/res'  }
+task cleanAndroidAssets   (type: Delete) { delete '../android/assets' }
+task cleanAndroidPackages (type: Delete) { delete '../android/assets/data/packages' }
+
+appVariants.each { appVariant -> 
+
+	def appVariantLc = appVariant.toLowerCase()	
+
+	storeVariants.each { storeVariant ->
+
+		def flavor = appVariant + storeVariant 
+		def flavorLc = flavor.toLowerCase()
+		
+	    task "copyAndroidBuildConfig$flavor" (type: Copy, dependsOn: "generate${flavor}ReleaseSources") {
+	    	from "build/source/buildConfig/${flavorLc}/release/com/example/yourapp/android/BuildConfig.java"
+			into '../core/src/com/example/yourapp/'
+			filter { line -> line.contains('package com.example.yourapp.android;') ? 'package com.example.yourapp;' : line }
+	    }
+	    task "copyAndroidManifest$flavor" (type: Copy, dependsOn: "copyAndroidBuildConfig$flavor" ) {
+	    	from "build/manifests/${flavorLc}/release/AndroidManifest.xml"
+			into '../android/'
+	    }
+		task "copyAndroidR$flavor" (type: Copy, dependsOn: "copyAndroidManifest$flavor") {
+	    	from "build/source/r/${flavorLc}/release/"
+			into '../android/src'
+	    }
+	    task "copyAndroidRes$flavor" (type: Copy, 
+	    	dependsOn: ["cleanAndroidRes", "copyAndroidR$flavor"] ) {
+	    	from "build/res/all/${flavorLc}/release/"
+			into '../android/res'
+	    }
+	    task "copyAndroidAssets$flavor" (type: Copy, 
+	    	dependsOn: ["cleanAndroidAssets", "copyAndroidRes$flavor"] ) {
+	    	from ("build/assets/${flavorLc}/release/") {
+	    		include '**/*.txt'
+				expand ( versionName: iOSversionName, versionCode: android.defaultConfig.versionCode )
+			}
+	    	from ("build/assets/${flavorLc}/release/") {
+	    		exclude '**/*.txt'
+	    	}
+			into '../android/assets'
+	    }
+	    task "prep$flavor" (dependsOn: ["copyAndroidAssets$flavor", "prepRobovm$appVariant"]) {
+	    }
+	}
+
+	task "copyRobovm${appVariant}Props" (type: Copy) {  
+	    from 'src/ios/robovm.properties'  
+	    into '../ios/'
+	    expand( packageName: android.productFlavors[appVariantLc].packageName, 
+	    		versionName: iOSversionName,
+	    		versionCode: android.defaultConfig.versionCode,
+	    		appName: iOSAppNames[appVariant])
+	}
+
+	task "copyRobovm${appVariant}ResourcesLaunch" (type: Copy, dependsOn: cleanIosRes) {
+		from "src/ios/main/resources/"
+		into "../ios/resources"
+	}
+
+	task "copyRobovm${appVariant}Resources" (type: Copy, dependsOn: "copyRobovm${appVariant}ResourcesLaunch") {
+		from "src/ios/${appVariantLc}/resources/"
+		into "../ios/resources"
+	}
+
+	task "prepRobovm$appVariant" (dependsOn: ["copyRobovm${appVariant}Props", "copyRobovm${appVariant}Resources" ]) {
+	}
+
+	task "prepClean${appVariant}" (dependsOn: cleanAndroidPackages){	
+		mustRunAfter "prep${appVariant}Google"
+	}
+
+	task "prep${appVariant}Ios" (type: Copy, dependsOn: ["prep${appVariant}Google", "prepClean${appVariant}"]) {
+		from "src/ios/${appVariantLc}/data/"
+		into "../android/assets/data"
+	}
+}
+
+
+////////////////////////// original Android gradle script follows //////////////////////
+// sets up the Android Eclipse project, using the old Ant based build.
+eclipse {
+    // need to specify Java source sets explicitly, SpringSource Gradle Eclipse plugin
+    // ignores any nodes added in classpath.file.withXml
+    sourceSets {
+        main {
+            java.srcDirs "src", 'gen'
+        }
+    }
+
+    jdt {
+        sourceCompatibility = 1.6
+        targetCompatibility = 1.6
+    }
+
+    classpath {
+        plusConfigurations += project.configurations.compile        
+        containers 'com.android.ide.eclipse.adt.ANDROID_FRAMEWORK', 'com.android.ide.eclipse.adt.LIBRARIES'       
+    }
+
+    project {
+        name = appName + "-android"
+        natures 'com.android.ide.eclipse.adt.AndroidNature'
+        buildCommands.clear();
+        buildCommand "com.android.ide.eclipse.adt.ResourceManagerBuilder"
+        buildCommand "com.android.ide.eclipse.adt.PreCompilerBuilder"
+        buildCommand "org.eclipse.jdt.core.javabuilder"
+        buildCommand "com.android.ide.eclipse.adt.ApkBuilder"
+    }
+
+}
+
+// sets up the Android Idea project, using the old Ant based build.
+idea {
+    module {
+        sourceDirs += file("src");
+        scopes = [ COMPILE: [plus:[project.configurations.compile]]]        
+
+        iml {
+            withXml {
+                def node = it.asNode()
+                def builder = NodeBuilder.newInstance();
+                builder.current = node;
+                builder.component(name: "FacetManager") {
+                    facet(type: "android", name: "Android") {
+                        configuration {
+                            option(name: "UPDATE_PROPERTY_FILES", value:"true")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

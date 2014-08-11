@@ -1,0 +1,120 @@
+buildscript {
+    repositories { 
+        mavenCentral() 
+        maven { url 'https://github.com/steffenschaefer/gwt-gradle-plugin/raw/maven-repo/' }
+    }
+
+    dependencies {
+        classpath 'de.richsource.gradle.plugins:gwt-gradle-plugin:0.3'
+        classpath 'com.android.tools.build:gradle:0.9+'
+        classpath 'com.github.jtakakura:gradle-robovm-plugin:0.0.10'
+    }
+}
+
+allprojects {
+    apply plugin: "eclipse"
+    apply plugin: "idea"
+    
+    version = "1.0"
+    ext {
+        appName = "Your App Name"
+        gdxVersion = "1.3.0"
+        roboVMVersion = "0.0.14"
+    }
+    
+    repositories {
+        mavenCentral()
+        maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
+        maven { url "https://oss.sonatype.org/content/repositories/releases/" }
+    }
+}
+
+project(":core") {
+    apply plugin: "java"
+    
+    dependencies {
+        compile "com.badlogicgames.gdx:gdx:$gdxVersion"
+        compile "org.json:json:20090211"
+        compile "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+        compile "net.lingala.zip4j:zip4j:1.2.4"
+     }
+}
+
+project(":desktop") {
+    apply plugin: "java"
+    
+	sourceSets.test.java.srcDirs = ["test/"]
+    
+    dependencies {
+        compile project(":core")
+        compile "com.badlogicgames.gdx:gdx-backend-lwjgl:$gdxVersion"
+        compile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+        compile "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-desktop"
+
+        testCompile "junit:junit:4.11+"                                                     
+        testCompile "com.badlogicgames.gdx:gdx-backend-headless:$gdxVersion"               
+        testCompile "com.badlogicgames.gdx:gdx:$gdxVersion"                                
+        testCompile "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"       
+        testCompile "com.badlogicgames.gdx:gdx-box2d:$gdxVersion"                          
+        testCompile "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-desktop"         
+    }
+}
+
+project(":android") {
+    apply plugin: "android"
+
+    configurations { natives }
+
+    dependencies {
+        compile project(":core")
+        compile "com.badlogicgames.gdx:gdx-backend-android:$gdxVersion"        
+        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-x86"
+        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi"
+        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-armeabi-v7a"
+        compile "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-armeabi"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-armeabi-v7a"
+    }
+}
+
+project(":pack") {
+    apply plugin: 'android'
+
+    configurations { natives }    
+}
+
+
+project(":gwt") {
+    apply plugin: "gwt"
+    apply plugin: "war"
+    webAppDirName = 'webapp'
+
+    dependencies {
+        compile project(":core")
+        compile "com.badlogicgames.gdx:gdx-backend-gwt:$gdxVersion"
+        compile "com.badlogicgames.gdx:gdx:$gdxVersion:sources"
+        compile "com.badlogicgames.gdx:gdx-backend-gwt:$gdxVersion:sources"
+    }    
+}
+
+project(":ios") {
+    apply plugin: 'java'
+    apply plugin: 'robovm'
+
+    configurations { natives }
+
+    dependencies {
+        compile "org.robovm:robovm-rt:${roboVMVersion}"
+        compile "org.robovm:robovm-cocoatouch:${roboVMVersion}"
+        compile fileTree(dir: 'libs', include: '*.a')
+        compile project(":core")
+        compile "com.badlogicgames.gdx:gdx-backend-robovm:$gdxVersion"
+        natives "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-ios"
+        compile "com.badlogicgames.gdx:gdx-freetype:$gdxVersion"
+        natives "com.badlogicgames.gdx:gdx-freetype-platform:$gdxVersion:natives-ios"
+    }
+}
+
+tasks.eclipse.doLast {
+	delete ".project"
+}
