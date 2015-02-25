@@ -35,13 +35,13 @@ android {
 
     	free {
     		flavorDimension "version"
-    		packageName "com.example.yourappfree"
+    		applicationId "com.example.yourappfree"
 			buildConfigField "int", "APP_COLOR_SKIN", "2"
 	        buildConfigField "String", "FLURRY_ID", "\"BBBBBBBBBBBBBBBBBBBBB\""
  		}
     	paid {
     		flavorDimension "version"
-    		packageName "com.example.yourapppaid"
+    		applicationId "com.example.yourapppaid"
 			buildConfigField "int", "APP_COLOR_SKIN", "0"    		
 	        buildConfigField "String", "FLURRY_ID", "\"AAAAAAAAAAAAAAAAAAAAAA\""		
     	}
@@ -49,7 +49,7 @@ android {
 
     buildTypes {
         release {
-            runProguard false
+            minifyEnabled false
             proguardFile getDefaultProguardFile('proguard-android.txt')
             signingConfig signingConfigs.release
         }
@@ -109,7 +109,7 @@ appVariants.each { appVariant ->
 	task "copyRobovm${appVariant}Props" (type: Copy) {  
 	    from 'src/ios/robovm.properties'  
 	    into '../ios/'
-	    expand( packageName: android.productFlavors[appVariantLc].packageName, 
+	    expand( packageName: android.productFlavors[appVariantLc].applicationId, 
 	    		versionName: iOSversionName,
 	    		versionCode: android.defaultConfig.versionCode,
 	    		appName: iOSAppNames[appVariant])
